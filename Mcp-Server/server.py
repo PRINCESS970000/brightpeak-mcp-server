@@ -1,0 +1,125 @@
+import sqlite3
+import os
+import re
+from fastmcp import FastMCP
+
+
+mcp = FastMCP("Brightpeak Academy Server")
+
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "DB", "db", "brightpeak.db")
+
+def get_db_connection():
+  
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@mcp.tool()
+def get_student_profile(email: str) -> dict:
+    # 1. Input Validation:
+    email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    if not re.match(email_regex, email):
+        return {"status": "error", "message": "Invalid email format."}
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # 2. Logic Validation:     
+    cursor.execute("SELECT * FROM students WHERE email = ?", (email,))
+    student = cursor.fetchone()
+    
+    if not student:
+        conn.close()
+        return {"status": "error", "message": f"Student with email '{email}' not found."}
+
+    # 3. Fetching Enrolled Courses and Grades
+    query = """
+        SELECT c.title, e.grade, e.status 
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.course_id
+        WHERE e.student_id = ?
+    """
+    cursor.execute(query, (student["student_id"],))
+    courses = cursor.fetchall()
+    conn.close()
+
+    return {
+        "status": "success",
+        "data": {
+            "student_id": student["student_id"],
+            "name": student["name"],
+            "email": student["email"],
+            "role": student["role"],
+            "enrolled_courses": [dict(row) for row in courses]
+        }
+    }
+
+
+@mcp.tool()
+def list_all_courses() -> dict:
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT c.course_id, c.title, c.credits, i.name as instructor_name
+        FROM courses c
+        LEFT JOIN instructors i ON c.instructor_id = i.instructor_id
+    """
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return {
+        "status": "success",
+        "courses": [dict(row) for row in rows]
+    }
+
+
+@mcp.tool()
+def enroll_student(student_id: int, course_id: int) -> dict:
+    
+    
+    # 1. Input Validation: 
+    if student_id <= 0 or course_id <= 0:
+        return {"status": "error", "message": "Student ID and Course ID must be positive integers."}
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 2. Logic Validation   
+        cursor.execute("SELECT student_id FROM students WHERE student_id = ?", (student_id,))
+        if not cursor.fetchone():
+            return {"status": "error", "message": f"Student ID {student_id} does not exist."}
+
+        # 3. Logic Validation: 
+        cursor.execute("SELECT course_id FROM courses WHERE course_id = ?", (course_id,))
+        if not cursor.fetchone():
+            return {"status": "error", "message": f"Course ID {course_id} does not exist."}
+
+        # 4. Duplicate Check:
+        cursor.execute(
+            "SELECT enrollment_id FROM enrollments WHERE student_id = ? AND course_id = ?", 
+            (student_id, course_id)
+        )
+        if cursor.fetchone():
+            return {"status": "error", "message": "Student is already enrolled in this course."}
+        # 5. Insert Enrollment Record
+        cursor.execute(
+            "INSERT INTO enrollments (student_id, course_id, status) VALUES (?, ?, 'ENROLLED')",
+            (student_id, course_id)
+        )
+        conn.commit()
+        return {"status": "success", "message": f"Successfully enrolled student {student_id} in course {course_id}."}
+
+    except Exception as e:
+        return {"status": "error", "message": f"Database exception: {str(e)}"}
+    finally:
+        conn.close()
+
+
+if __name__ == "__main__":
+    mcp.run()

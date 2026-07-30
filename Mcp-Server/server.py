@@ -119,7 +119,66 @@ def enroll_student(student_id: int, course_id: int) -> dict:
         return {"status": "error", "message": f"Database exception: {str(e)}"}
     finally:
         conn.close()
+      
+@mcp.tool(
+    name="update_student_grade",
+    description="Updates a student's grade for a specific course. Requires INSTRUCTOR or ADMIN role and strict input validation."
+)
+def update_student_grade(student_id: int, course_id: int, new_grade: float, requester_role: str) -> dict:
+    # 1. Authorization Check (فحص الصلاحيات داخل الـ Handler)
+    allowed_roles = ["INSTRUCTOR", "ADMIN"]
+    if requester_role not in allowed_roles:
+        return {
+            "status": "error", 
+            "message": f"Authorization denied. Role '{requester_role}' is not permitted to modify grades."
+        }
 
+    # 2. Server-side Validation 
+    if not (0.0 <= new_grade <= 100.0):
+        return {
+            "status": "error", 
+            "message": "Invalid grade. Grade must be between 0.0 and 100.0."
+        }
+
+    if student_id <= 0 or course_id <= 0:
+        return {
+            "status": "error", 
+            "message": "Student ID and Course ID must be positive integers."
+        }
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 3. Check if enrollment exists
+        cursor.execute(
+            "SELECT enrollment_id FROM enrollments WHERE student_id = ? AND course_id = ?",
+            (student_id, course_id)
+        )
+        enrollment = cursor.fetchone()
+        
+        if not enrollment:
+            return {
+                "status": "error", 
+                "message": f"No active enrollment found for Student ID {student_id} in Course ID {course_id}."
+            }
+
+        # 4. Perform Update 
+        cursor.execute(
+            "UPDATE enrollments SET grade = ?, status = 'COMPLETED' WHERE student_id = ? AND course_id = ?",
+            (new_grade, student_id, course_id)
+        )
+        conn.commit()
+
+        return {
+            "status": "success",
+            "message": f"Successfully updated grade for student {student_id} in course {course_id} to {new_grade}."
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": f"Database exception: {str(e)}"}
+    finally:
+        conn.close()
 
 if __name__ == "__main__":
     mcp.run()

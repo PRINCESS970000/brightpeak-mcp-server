@@ -125,7 +125,7 @@ def enroll_student(student_id: int, course_id: int) -> dict:
     description="Updates a student's grade for a specific course. Requires INSTRUCTOR or ADMIN role and strict input validation."
 )
 def update_student_grade(student_id: int, course_id: int, new_grade: float, requester_role: str) -> dict:
-    # 1. Authorization Check (فحص الصلاحيات داخل الـ Handler)
+    # 1. Authorization Check 
     allowed_roles = ["INSTRUCTOR", "ADMIN"]
     if requester_role not in allowed_roles:
         return {
@@ -187,16 +187,16 @@ import time
     description="Generates a comprehensive academic report for all courses and students, reporting progress during execution."
 )
 def generate_academic_report() -> dict:
-    # محاكاة عملية طويلة بتاخد وقت، مع إرسال تقدم (Progress updates)
+    #(Progress updates)
     total_steps = 3
     
-    # جمع بيانات الطلاب
+    # collect student data
     time.sleep(1)
     
-    # تحليل درجات التسجيلات
+    # analyise students'degree
     time.sleep(1)
     
-    #  تجميع الشهادات والتقارير النهائية
+    #  collect final results
     time.sleep(1)
 
     conn = get_db_connection()
@@ -228,7 +228,7 @@ def request_student_evaluation(student_id: int) -> dict:
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # جلب بيانات الطالب
+    # show students'data
     cursor.execute("SELECT name, email FROM students WHERE student_id = ?", (student_id,))
     student = cursor.fetchone()
     
@@ -236,7 +236,7 @@ def request_student_evaluation(student_id: int) -> dict:
         conn.close()
         return {"status": "error", "message": f"Student ID {student_id} not found."}
         
-    # جلب درجات الطالب
+    # select students'zz
     query = """
         SELECT c.title, e.grade, e.status 
         FROM enrollments e
@@ -247,7 +247,7 @@ def request_student_evaluation(student_id: int) -> dict:
     courses = cursor.fetchall()
     conn.close()
 
-    # تجهيز محتوى لطلب الـ Sampling من العميل
+    #from sampling prepare students'data 
     return {
         "status": "success",
         "sampling_request": {

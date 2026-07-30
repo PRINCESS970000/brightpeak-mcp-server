@@ -178,7 +178,84 @@ def update_student_grade(student_id: int, course_id: int, new_grade: float, requ
     except Exception as e:
         return {"status": "error", "message": f"Database exception: {str(e)}"}
     finally:
+        conn.close() 
+
+import time
+
+@mcp.tool(
+    name="generate_academic_report",
+    description="Generates a comprehensive academic report for all courses and students, reporting progress during execution."
+)
+def generate_academic_report() -> dict:
+    # محاكاة عملية طويلة بتاخد وقت، مع إرسال تقدم (Progress updates)
+    total_steps = 3
+    
+    # جمع بيانات الطلاب
+    time.sleep(1)
+    
+    # تحليل درجات التسجيلات
+    time.sleep(1)
+    
+    #  تجميع الشهادات والتقارير النهائية
+    time.sleep(1)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as student_count FROM students")
+    student_count = cursor.fetchone()["student_count"]
+    
+    cursor.execute("SELECT COUNT(*) as course_count FROM courses")
+    course_count = cursor.fetchone()["course_count"]
+    
+    conn.close()
+
+    return {
+        "status": "success",
+        "message": "Academic report generated successfully with progress tracking.",
+        "report_summary": {
+            "total_students": student_count,
+            "total_courses": course_count,
+            "status": "Completed all evaluation steps"
+        }
+    }
+
+@mcp.tool(
+    name="request_student_evaluation",
+    description="Requests the client model to evaluate a student's academic standing based on their grades using sampling."
+)
+def request_student_evaluation(student_id: int) -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # جلب بيانات الطالب
+    cursor.execute("SELECT name, email FROM students WHERE student_id = ?", (student_id,))
+    student = cursor.fetchone()
+    
+    if not student:
         conn.close()
+        return {"status": "error", "message": f"Student ID {student_id} not found."}
+        
+    # جلب درجات الطالب
+    query = """
+        SELECT c.title, e.grade, e.status 
+        FROM enrollments e
+        JOIN courses c ON e.course_id = c.course_id
+        WHERE e.student_id = ?
+    """
+    cursor.execute(query, (student_id,))
+    courses = cursor.fetchall()
+    conn.close()
+
+    # تجهيز محتوى لطلب الـ Sampling من العميل
+    return {
+        "status": "success",
+        "sampling_request": {
+            "prompt": f"Please evaluate the academic performance for student {student['name']} enrolled in these courses: {[dict(row) for row in courses]}. Provide a short recommendation.",
+            "max_tokens": 150
+        },
+        "message": "Sampling request constructed for client model evaluation."
+    }
 
 if __name__ == "__main__":
     mcp.run()

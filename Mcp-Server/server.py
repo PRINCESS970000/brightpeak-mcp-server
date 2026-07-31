@@ -4,13 +4,14 @@ import re
 from fastmcp import FastMCP, Context
 
 
+
 mcp = FastMCP("Brightpeak Academy Server")
 
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "DB", "db", "brightpeak.db")
 
 def get_db_connection():
-  
+
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -184,20 +185,22 @@ import time
 
 @mcp.tool(
     name="generate_academic_report",
-    description="Generates a comprehensive academic report for all courses and students, reporting progress during execution."
+    description="Generates a comprehensive academic report for all courses and students."
 )
-def generate_academic_report() -> dict:
-    #(Progress updates)
-    total_steps = 3
-    
-    # collect student data
-    time.sleep(1)
-    
-    # analyise students'degree
-    time.sleep(1)
-    
-    #  collect final results
-    time.sleep(1)
+async def generate_academic_report(ctx: Context) -> dict:
+
+    import asyncio
+
+    await ctx.report_progress(progress=0, total=100)
+
+    await asyncio.sleep(1)
+    await ctx.report_progress(progress=30, total=100)
+
+    await asyncio.sleep(1)
+    await ctx.report_progress(progress=70, total=100)
+
+    await asyncio.sleep(1)
+    await ctx.report_progress(progress=100, total=100)
 
     conn = get_db_connection()
     cursor = conn.cursor()

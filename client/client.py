@@ -120,6 +120,11 @@ async def main():
         result = await client.call_tool("generate_academic_report")
 
         print(result.data)
+        print("\n========== Calling generate_academic_report ==========\n")
+
+        result = await client.call_tool("generate_academic_report")
+
+        print(result.data)
 # ======================================================
 # Run Client
 # ======================================================

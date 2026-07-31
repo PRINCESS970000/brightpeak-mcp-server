@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import re
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 
 
 mcp = FastMCP("Brightpeak Academy Server")

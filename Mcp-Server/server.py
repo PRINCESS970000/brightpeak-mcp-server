@@ -194,13 +194,13 @@ async def generate_academic_report(ctx: Context) -> dict:
     await ctx.report_progress(progress=0, total=100)
 
     await asyncio.sleep(1)
-    await ctx.report_progress(progress=30, total=100)
+    await ctx.report_progress(30, 100, "Collecting student records...")
 
     await asyncio.sleep(1)
-    await ctx.report_progress(progress=70, total=100)
+    await ctx.report_progress(70, 100, "Analyzing grades...")
 
     await asyncio.sleep(1)
-    await ctx.report_progress(progress=100, total=100)
+    await ctx.report_progress(100, 100, "Generating final report...")
 
     conn = get_db_connection()
     cursor = conn.cursor()

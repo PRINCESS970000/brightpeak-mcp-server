@@ -2,9 +2,7 @@ from fastmcp.client import Client, PythonStdioTransport
 import asyncio
 import os
 
-# ======================================================
 # Path to the MCP Server
-# ======================================================
 
 SERVER_FILE = os.path.abspath(
     os.path.join(
@@ -15,13 +13,22 @@ SERVER_FILE = os.path.abspath(
     )
 )
 
-# ======================================================
 # Create Transport & Client
-# ======================================================
-
 transport = PythonStdioTransport(SERVER_FILE)
-client = Client(transport)
 
+async def progress_handler(progress, total, message):
+
+    percent = (progress / total) * 100
+
+    print(f"\nProgress: {percent:.0f}%")
+
+    if message:
+        print(f" {message}")
+
+client = Client(
+        transport,
+        progress_handler=progress_handler
+    )
 
 # ======================================================
 # Main Function
@@ -31,7 +38,7 @@ async def main():
 
     async with client:
 
-        print("✅ Connected to Brightpeak MCP Server!")
+        print(" Connected to Brightpeak MCP Server!")
 
         # ----------------------------------------------
         # List all available tools
@@ -63,9 +70,9 @@ async def main():
             print(f"Credits     : {course['credits']}")
             print("-" * 40)
 
-        # ----------------------------------------------
+
         # Call get_student_profile
-        # ----------------------------------------------
+
 
         print("\n========== Calling get_student_profile ==========\n")
 
@@ -120,19 +127,7 @@ async def main():
 
         for course in student["enrolled_courses"]:
             print(course)
-        print("\n========== Calling generate_academic_report ==========\n")
 
-        result = await client.call_tool("generate_academic_report")
-
-        print(result.data)
-        print("\n========== Calling generate_academic_report ==========\n")
-
-        result = await client.call_tool("generate_academic_report")
-
-        print(result.data)
-# ======================================================
-# Run Client
-# ======================================================
 
 if __name__ == "__main__":
     asyncio.run(main())

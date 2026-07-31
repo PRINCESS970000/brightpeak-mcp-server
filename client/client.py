@@ -112,6 +112,11 @@ async def main():
         )
 
         student = result.data["data"]
+        print("\n========== Calling generate_academic_report ==========\n")
+
+         result = await client.call_tool("generate_academic_report")
+
+         print(result.data)
 
         for course in student["enrolled_courses"]:
             print(course)

@@ -1,4 +1,8 @@
-from fastmcp.client import Client, PythonStdioTransport
+from fastmcp.client import (
+    Client,
+    PythonStdioTransport,
+    StreamableHttpTransport
+)
 from mcp.types import SamplingCapability
 import asyncio
 import os
@@ -15,12 +19,32 @@ SERVER_FILE = os.path.abspath(
         "server.py"
     )
 )
+import sys
 
 # ======================================================
-# Create Transport
+# Transport Configuration
 # ======================================================
 
-transport = PythonStdioTransport(SERVER_FILE)
+if len(sys.argv) > 1:
+    TRANSPORT_TYPE = sys.argv[1].lower()
+else:
+    TRANSPORT_TYPE = "stdio"
+
+
+if TRANSPORT_TYPE == "stdio":
+
+    transport = PythonStdioTransport(SERVER_FILE)
+
+elif TRANSPORT_TYPE == "http":
+
+    transport = StreamableHttpTransport(
+        "http://127.0.0.1:8000/mcp"
+    )
+
+else:
+    raise ValueError(
+        "Transport must be either 'stdio' or 'http'."
+    )
 
 
 # ======================================================
@@ -38,11 +62,13 @@ async def progress_handler(progress, total, message):
 
 
 # ======================================================
+# Sampling Handler
+# ======================================================
+
 async def sampling_handler(messages, params, context):
 
     print("\n========== Sampling Request ==========\n")
 
-    # Extract the prompt sent by the server
     prompt = messages[0].content.text
 
     print(prompt.strip())
@@ -68,9 +94,9 @@ Continue maintaining the current performance and focus on completing the remaini
     return response
 
 
-
+# ======================================================
 # Create Client
-
+# ======================================================
 
 client = Client(
     transport,
@@ -88,7 +114,7 @@ async def main():
 
     async with client:
 
-        print(" Connected to Brightpeak MCP Server!")
+        print("✅ Connected to Brightpeak MCP Server!")
 
         # ------------------------------------------------
         # List Tools
@@ -103,8 +129,9 @@ async def main():
             print(f"Description: {tool.description}")
             print("-" * 50)
 
+        # ------------------------------------------------
         # list_all_courses
-
+        # ------------------------------------------------
 
         print("\n========== Calling list_all_courses ==========\n")
 
@@ -182,8 +209,9 @@ async def main():
         for course in student["enrolled_courses"]:
             print(course)
 
-
+        # ------------------------------------------------
         # generate_academic_report
+        # ------------------------------------------------
 
         print("\n========== Calling generate_academic_report ==========\n")
 
@@ -191,8 +219,9 @@ async def main():
 
         print(result.data)
 
+        # ------------------------------------------------
         # request_student_evaluation
-
+        # ------------------------------------------------
 
         print("\n========== Calling request_student_evaluation ==========\n")
 
@@ -207,14 +236,15 @@ async def main():
 
         print("\n========== Student Evaluation ==========\n")
         print("=" * 60)
-        print(" STUDENT EVALUATION")
+        print("STUDENT EVALUATION")
         print("=" * 60)
-
         print(evaluation.strip())
-
         print("=" * 60)
 
+
+# ======================================================
 # Run Client
+# ======================================================
 
 if __name__ == "__main__":
     asyncio.run(main())

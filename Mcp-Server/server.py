@@ -298,5 +298,20 @@ async def request_student_evaluation(student_id: int, ctx: Context) -> dict:
         "status": "success",
         "evaluation": response.text
     }
+import sys
+
 if __name__ == "__main__":
-    mcp.run()
+
+    if len(sys.argv) > 1 and sys.argv[1] == "http":
+
+        mcp.run(
+            transport="streamable-http",
+            host="127.0.0.1",
+            port=8000
+        )
+
+    else:
+
+        mcp.run(
+            transport="stdio"
+        )

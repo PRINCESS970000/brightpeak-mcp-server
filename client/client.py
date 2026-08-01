@@ -1,8 +1,11 @@
 from fastmcp.client import Client, PythonStdioTransport
+from mcp.types import SamplingCapability
 import asyncio
 import os
 
+# ======================================================
 # Path to the MCP Server
+# ======================================================
 
 SERVER_FILE = os.path.abspath(
     os.path.join(
@@ -13,8 +16,16 @@ SERVER_FILE = os.path.abspath(
     )
 )
 
-# Create Transport & Client
+# ======================================================
+# Create Transport
+# ======================================================
+
 transport = PythonStdioTransport(SERVER_FILE)
+
+
+# ======================================================
+# Progress Handler
+# ======================================================
 
 async def progress_handler(progress, total, message):
 
@@ -23,12 +34,51 @@ async def progress_handler(progress, total, message):
     print(f"\nProgress: {percent:.0f}%")
 
     if message:
-        print(f" {message}")
+        print(message)
+
+
+# ======================================================
+async def sampling_handler(messages, params, context):
+
+    print("\n========== Sampling Request ==========\n")
+
+    # Extract the prompt sent by the server
+    prompt = messages[0].content.text
+
+    print(prompt.strip())
+
+    print("\n========== Generating Response ==========\n")
+
+    response = """
+Overall Performance:
+Excellent
+
+Strengths:
+- Strong performance in core courses.
+- High grades in completed subjects.
+- Consistent academic achievement.
+
+Weaknesses:
+- One course is still in progress.
+
+Recommendation:
+Continue maintaining the current performance and focus on completing the remaining courses with the same level of excellence.
+"""
+
+    return response
+
+
+
+# Create Client
+
 
 client = Client(
-        transport,
-        progress_handler=progress_handler
-    )
+    transport,
+    progress_handler=progress_handler,
+    sampling_handler=sampling_handler,
+    sampling_capabilities=SamplingCapability()
+)
+
 
 # ======================================================
 # Main Function
@@ -40,9 +90,9 @@ async def main():
 
         print(" Connected to Brightpeak MCP Server!")
 
-        # ----------------------------------------------
-        # List all available tools
-        # ----------------------------------------------
+        # ------------------------------------------------
+        # List Tools
+        # ------------------------------------------------
 
         tools = await client.list_tools()
 
@@ -53,9 +103,8 @@ async def main():
             print(f"Description: {tool.description}")
             print("-" * 50)
 
-        # ----------------------------------------------
-        # Call list_all_courses
-        # ----------------------------------------------
+        # list_all_courses
+
 
         print("\n========== Calling list_all_courses ==========\n")
 
@@ -70,9 +119,9 @@ async def main():
             print(f"Credits     : {course['credits']}")
             print("-" * 40)
 
-
-        # Call get_student_profile
-
+        # ------------------------------------------------
+        # get_student_profile
+        # ------------------------------------------------
 
         print("\n========== Calling get_student_profile ==========\n")
 
@@ -96,6 +145,11 @@ async def main():
             print(f"Grade  : {course['grade']}")
             print(f"Status : {course['status']}")
             print("-" * 30)
+
+        # ------------------------------------------------
+        # update_student_grade
+        # ------------------------------------------------
+
         print("\n========== Calling update_student_grade ==========\n")
 
         result = await client.call_tool(
@@ -109,6 +163,11 @@ async def main():
         )
 
         print(result.data)
+
+        # ------------------------------------------------
+        # Verify Update
+        # ------------------------------------------------
+
         print("\n========== Verify Updated Student ==========\n")
 
         result = await client.call_tool(
@@ -119,15 +178,43 @@ async def main():
         )
 
         student = result.data["data"]
+
+        for course in student["enrolled_courses"]:
+            print(course)
+
+
+        # generate_academic_report
+
         print("\n========== Calling generate_academic_report ==========\n")
 
         result = await client.call_tool("generate_academic_report")
 
         print(result.data)
 
-        for course in student["enrolled_courses"]:
-            print(course)
+        # request_student_evaluation
 
+
+        print("\n========== Calling request_student_evaluation ==========\n")
+
+        result = await client.call_tool(
+            "request_student_evaluation",
+            {
+                "student_id": 1
+            }
+        )
+
+        evaluation = result.data["evaluation"]
+
+        print("\n========== Student Evaluation ==========\n")
+        print("=" * 60)
+        print(" STUDENT EVALUATION")
+        print("=" * 60)
+
+        print(evaluation.strip())
+
+        print("=" * 60)
+
+# Run Client
 
 if __name__ == "__main__":
     asyncio.run(main())

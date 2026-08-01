@@ -15,3 +15,6 @@ from fastmcp import Context
 import inspect
 
 print(inspect.signature(Context.sample))
+from mcp.types import SamplingCapability
+
+print(SamplingCapability)

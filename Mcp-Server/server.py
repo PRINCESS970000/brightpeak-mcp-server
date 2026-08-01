@@ -259,19 +259,35 @@ async def request_student_evaluation(student_id: int, ctx: Context) -> dict:
     conn.close()
 
     # Build prompt
+    course_details = ""
+
+    for course in courses:
+        course_details += (
+            f"- {course['title']}\n"
+            f"  Grade : {course['grade']}\n"
+            f"  Status: {course['status']}\n\n"
+        )
+
     prompt = f"""
- Evaluate the academic performance of student {student['name']}.
+    You are an academic advisor.
 
- Courses:
- {[dict(row) for row in courses]}
+    Evaluate the academic performance of the following student.
 
- Please provide:
- 1. Overall performance
- 2. Strengths
- 3. Weaknesses
- 4. Recommendation
- """
+    Student Name:
+    {student['name']}
 
+    Courses:
+    {course_details}
+
+    Please provide:
+
+    1. Overall Performance
+    2. Strengths
+    3. Weaknesses
+    4. Recommendation
+
+    Keep the response concise and professional.
+    """
     # Ask the client model
     response = await ctx.sample(
         messages=prompt,
@@ -280,7 +296,7 @@ async def request_student_evaluation(student_id: int, ctx: Context) -> dict:
 
     return {
         "status": "success",
-        "evaluation": str(response)
+        "evaluation": response.text
     }
 if __name__ == "__main__":
     mcp.run()

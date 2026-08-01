@@ -8,3 +8,10 @@ from fastmcp.client import Client
 import inspect
 
 print(inspect.signature(Client))
+from fastmcp import Context
+
+print(dir(Context))
+from fastmcp import Context
+import inspect
+
+print(inspect.signature(Context.sample))

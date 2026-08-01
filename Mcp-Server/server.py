@@ -223,42 +223,64 @@ async def generate_academic_report(ctx: Context) -> dict:
         }
     }
 
+
 @mcp.tool(
     name="request_student_evaluation",
     description="Requests the client model to evaluate a student's academic standing based on their grades using sampling."
 )
-def request_student_evaluation(student_id: int) -> dict:
+async def request_student_evaluation(student_id: int, ctx: Context) -> dict:
     conn = get_db_connection()
     cursor = conn.cursor()
-    
-    # show students'data
-    cursor.execute("SELECT name, email FROM students WHERE student_id = ?", (student_id,))
+
+    # Get student information
+    cursor.execute(
+        "SELECT name, email FROM students WHERE student_id = ?",
+        (student_id,)
+    )
     student = cursor.fetchone()
-    
+
     if not student:
         conn.close()
-        return {"status": "error", "message": f"Student ID {student_id} not found."}
-        
-    # select students'zz
+        return {
+            "status": "error",
+            "message": f"Student ID {student_id} not found."
+        }
+
+    # Get enrolled courses
     query = """
-        SELECT c.title, e.grade, e.status 
-        FROM enrollments e
-        JOIN courses c ON e.course_id = c.course_id
-        WHERE e.student_id = ?
-    """
+         SELECT c.title, e.grade, e.status
+         FROM enrollments e
+         JOIN courses c ON e.course_id = c.course_id
+         WHERE e.student_id = ?
+     """
+
     cursor.execute(query, (student_id,))
     courses = cursor.fetchall()
     conn.close()
 
-    #from sampling prepare students'data 
+    # Build prompt
+    prompt = f"""
+ Evaluate the academic performance of student {student['name']}.
+
+ Courses:
+ {[dict(row) for row in courses]}
+
+ Please provide:
+ 1. Overall performance
+ 2. Strengths
+ 3. Weaknesses
+ 4. Recommendation
+ """
+
+    # Ask the client model
+    response = await ctx.sample(
+        messages=prompt,
+        max_tokens=150
+    )
+
     return {
         "status": "success",
-        "sampling_request": {
-            "prompt": f"Please evaluate the academic performance for student {student['name']} enrolled in these courses: {[dict(row) for row in courses]}. Provide a short recommendation.",
-            "max_tokens": 150
-        },
-        "message": "Sampling request constructed for client model evaluation."
+        "evaluation": str(response)
     }
-
 if __name__ == "__main__":
     mcp.run()
